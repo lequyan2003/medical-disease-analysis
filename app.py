@@ -23,7 +23,29 @@ if "result" not in st.session_state:
 
 def encode_image(image_path):
     with open(image_path, 'rb') as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+        return base64.b64encode(image_file.read()).decode('utf8')
+
+
+def chat_eli(query):
+    eli5_prompt = (
+        "You have to explain the below piece of information to a five years "
+        "old.\n" + query
+    )
+
+    messages = [
+        {
+            "role": "user",
+            "content": eli5_prompt
+        }
+    ]
+
+    response = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        max_tokens=1500
+    )
+
+    return response.choices[0].message.content
 
 
 def call_gpt4_model_for_analysis(file_name: str, sample_prompt=sample_prompt):
@@ -49,7 +71,7 @@ def call_gpt4_model_for_analysis(file_name: str, sample_prompt=sample_prompt):
     ]
 
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo-0125",
+        model="gpt-4o-mini",
         messages=messages,
         max_tokens=1500
     )
@@ -90,3 +112,10 @@ if st.button("Analyze Image"):
         )
         st.markdown(st.session_state['result'], unsafe_allow_html=True)
         os.unlink(st.session_state['filename'])  # Del tempfile after process
+
+# ELI5 Explanation
+if 'result' in st.session_state and st.session_state['result']:
+    st.info("Below you have an option for ELI5 to understand in simple terms.")
+    if st.radio("ELI5 - Explain like I'm 5", ("No", "Yes")) == "Yes":
+        simplified_explanation = chat_eli(st.session_state['result'])
+        st.markdown(simplified_explanation, unsafe_allow_html=True)
